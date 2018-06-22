@@ -30,7 +30,7 @@ produces:
 paths:
   /hello:
     # binds a127 app logic to a route
-    x-swagger-router-controller: hello_world
+    x-swagger-router-controller: hello
     get:
       description: Returns 'Hello' to the caller
       # used as the method name of the controller

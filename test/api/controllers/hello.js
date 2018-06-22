@@ -4,20 +4,20 @@ var server = require('../../../app');
 
 describe('controllers', function() {
 
-  describe('hello_world', function() {
+  describe('hello', function() {
 
     describe('GET /hello', function() {
 
       it('should return a default string', function(done) {
 
         request(server)
-          .get('/hello')
+          .get('/hello?api_key=1234')
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
           .expect(200)
           .end(function(err, res) {
             should.not.exist(err);
-
+            console.log('res.body.should:',res.body.should)
             res.body.should.eql('Hello, stranger!');
 
             done();
@@ -27,15 +27,14 @@ describe('controllers', function() {
       it('should accept a name parameter', function(done) {
 
         request(server)
-          .get('/hello')
-          .query({ name: 'Scott'})
+          .get('/hello?api_key=1234')
           .set('Accept', 'application/json')
           .expect('Content-Type', /json/)
           .expect(200)
           .end(function(err, res) {
             should.not.exist(err);
-
-            res.body.should.eql('Hello, Scott!');
+            res.body.should.eql('Hello, stranger!');
+            //res.body.should.eql('Hello, Scott!');
 
             done();
           });

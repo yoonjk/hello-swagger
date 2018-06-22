@@ -1,0 +1,10 @@
+applications:
+- buildpack: sdk-for-nodejs
+  path: .
+  domain: mybluemix.net
+  name: hello-server
+  host: hello-server
+  env:
+    PLATFORM: bluemix
+    API_KEY: '1234'
+    language: en-US
