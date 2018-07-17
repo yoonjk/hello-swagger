@@ -6,11 +6,9 @@ info:
 host: localhost:10010
 
 securityDefinitions:
-  api_key:
+  basicAuth:
     description: OpenStack Keystone Authentication
-    type: apiKey
-    in: query
-    name: api_key
+    type: basic
 
 security:
   - api_key: []
@@ -35,6 +33,8 @@ paths:
       description: Returns 'Hello' to the caller
       # used as the method name of the controller
       operationId: hello
+      security:
+        - basicAuth: []
       parameters:
         - name: name
           in: query
