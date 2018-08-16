@@ -1,22 +1,30 @@
 'use strict';
 
-const swaggerExpress = require('swagger-express-mw');
-const app = require('express')();
+const SwaggerExpress = require('swagger-express-mw');
+const express = require('express');
 const session = require('express-session');
 const http = require('http');
 const path = require('path');
 const morgan = require('morgan');
-const APIKEY=process.env.API_KEY;
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const { BasicStrategy } = require('passport-http');
 const { validate } = require('./auth');
-const router = app.Router();
 const appEnv = require('cfenv').getAppEnv();
+const app = express();
 const server = http.createServer();
-const router = require('./routes/routes');
-app.use('/', router);
-router.init(app);
+const router = require('./routes');
+const i18n = require('i18n');
+
+i18n.configure({
+  locales: ['en', 'ko'],
+  directory: __dirname + '../locales',
+  queryParameter: 'lang'
+});
+
+
+app.set('trust rpoxy',1);
+server.on('request', app);
 
 const swaggerConfig = {
   appRoot: path.resolve(__dirname, '..'), // required config
@@ -37,21 +45,26 @@ if (!appEnv.isLocal) {
 
 passport.use( new BasicStrategy(
   function(username, password, done) {
+    console.log('connected login');
+    const user = { username: username, password: password};
+    return done(null, user);
+    /*
     validate(username, password)
-      .then(user => done(null, user))
+      .then(user => {
+        console.log('success login');
+	return done(null, user)})
       .catch(err => {
         if (err.statusCode === 401 || err.statusCode === 404) {
           done(null, false);
         }
         done(err);
       });
+    */
   }
 ));
 
-
-
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
-swaggerExpress.create(swaggerConfig, function(err, swaggerExpress) {
+SwaggerExpress.create(swaggerConfig, function(err, swaggerExpress) {
   if (err) { throw err; }
 
   // install middleware
@@ -62,41 +75,56 @@ swaggerExpress.create(swaggerConfig, function(err, swaggerExpress) {
   // passport
   app.use(passport.initialize());
   app.use(passport.session());
+  app.use('/', router);
+  app.use(i18n.init);
+  app.route('/login')
+   .get(function(req, res, next) {
+     if (req.user) {
+       res.send('already login');
+     } else {
+    res.sendFile(__dirname + '/login.html');
+  }
 
+router.get('/users',
+  passport.authenticate('basic',{ session: false}),
+  function( req, res ){
+      console.log('match');
+      res.end('Authorized ja');
+  }
+);
+//passport custom callback
+router.post('/login',
+  function(req, res, next) {
+    passport.authenticate('basic', function (err, user, info) {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        res.send({ status:"error" , message: 'Incorrect username/password'});
+        return res.end();
+      }
+      res.send(user);
+      res.end();
+
+    })(req, res, next);
+  }
+);
+
+})
   var port = process.env.PORT || 10010;
-  app.listen(port);
-    if (swaggerExpress.runner.swagger.paths['/hello']) {
-      console.log(`try this:\ncurl Express server listening on port ${port}`);
-    }
+  server.listen(port, ()=> {
+    console.log('express server listening on port:', port);
+  });
 });
 
+passport.serializeUser(function (user, done) {
+  done(null, user)
+});
 
-
-// swaggerExpress.create(swaggerConfig, function(err, swaggerExpress) {
-//
-//   // add swagger-ui (/docs)
-//   app.use(SwaggerUi(swaggerExpress.runner.swagger));
-//   app.use(bodyParser.json());
-//   app.use(bodyParser.urlencoded({extended: false}));
-//   // passport
-//   app.use(passport.initialize());
-//   app.use(passport.session());
-//
-//   swaggerExpress.register(app);
-//
-// });
-
-//===============PASSPORT=================
-// Passport session setup.
-passport.serializeUser(function(user, done) {
-  console.log("serializing " + user.username);
+passport.deserializeUser(function (user, done) {
   done(null, user);
 });
 
-passport.deserializeUser(function(obj, done) {
-  console.log("deserializing " + obj);
-  done(null, obj);
-});
 
 function forwardToHttps(req, res, next) {
   if (req.get('X-Forwarded-Proto') === 'https') {

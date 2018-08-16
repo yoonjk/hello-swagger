@@ -25,9 +25,13 @@ var util = require('util');
   we specify that in the exports of this module that 'hello' maps to the function named 'hello'
  */
 module.exports = {
-  hello: hello
+  hello: hello,
+  createImage: upload
 };
 
+function upload(req, res) {
+  res.json("success");
+}
 /*
   Functions in a127 controllers used for operations should take two parameters:
 
