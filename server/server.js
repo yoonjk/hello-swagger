@@ -14,14 +14,6 @@ const appEnv = require('cfenv').getAppEnv();
 const app = express();
 const server = http.createServer();
 const router = require('./routes');
-const i18n = require('i18n');
-
-i18n.configure({
-  locales: ['en', 'ko'],
-  directory: __dirname + '../locales',
-  queryParameter: 'lang'
-});
-
 
 app.set('trust rpoxy',1);
 server.on('request', app);
@@ -76,7 +68,7 @@ SwaggerExpress.create(swaggerConfig, function(err, swaggerExpress) {
   app.use(passport.initialize());
   app.use(passport.session());
   app.use('/', router);
-  app.use(i18n.init);
+  //app.use(i18n.init);
   app.route('/login')
    .get(function(req, res, next) {
      if (req.user) {
