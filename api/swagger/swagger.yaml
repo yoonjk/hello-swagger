@@ -9,6 +9,8 @@ securityDefinitions:
     description: OpenStack Keystone Authentication
     type: basic
 
+security:
+  - basicAuth: []
 # basePath prefixes all resource paths
 basePath: /
 #
@@ -19,9 +21,11 @@ schemes:
 # format of bodies a client can send (Content-Type)
 consumes:
   - application/json
+  - multipart/form-data
 # format of the responses to the client (Accepts)
 produces:
   - application/json
+  - multipart/form-data
 paths:
   /hello:
     # binds a127 app logic to a route
@@ -52,21 +56,25 @@ paths:
     x-swagger-router-controller: hello
     post:
       summary: Uploads a file.
-      operationId: createImage
+      security:
+        - basicAuth: []
       consumes:
         - multipart/form-data
+      operationId: createImage
       parameters:
         - in: formData
-          name: userPhoto
+          name: file
           type: file
           description: The file to upload.
       responses:
-        200: 
+        201: 
           description: SuccessFul request
+          schema:
+            $ref: "#/definitions/SuccessResponse"
         default:
-         description: Error
-         schema:
-           $ref: "#/definitions/ErrorResponse"
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"
   /swagger:
     x-swagger-pipe: swagger_raw
 # complex objects have schema definitions
@@ -77,6 +85,18 @@ definitions:
     properties:
       message:
         type: string
+
+  SuccessResponse:
+    properties:
+      id:
+        type: string
+      extension:
+        type: string
+      size:
+        type: integer
+      type:
+        type: string
+
   ErrorResponse:
     required:
       - message

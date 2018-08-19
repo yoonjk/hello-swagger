@@ -1,6 +1,6 @@
 'use strict';
-
-const SwaggerExpress = require('swagger-express-mw');
+const Promise = require('bluebird');
+const SwaggerExpress = Promise.promisifyAll(require('swagger-express-mw'));
 const express = require('express');
 const session = require('express-session');
 const http = require('http');
@@ -14,7 +14,9 @@ const appEnv = require('cfenv').getAppEnv();
 const app = express();
 const server = http.createServer();
 const router = require('./routes');
-
+const {handler} = require('../lib');
+const langResource = require('../locales/translations/en-US.json');
+const upload = require('multer')({dest: 'upload/'});
 app.set('trust rpoxy',1);
 server.on('request', app);
 
@@ -35,10 +37,12 @@ if (!appEnv.isLocal) {
   app.use(forwardToHttps);
 }
 
+handler.registerLanguages(langResource);
 passport.use( new BasicStrategy(
   function(username, password, done) {
     console.log('connected login');
     const user = { username: username, password: password};
+    console.log('user:', user);
     return done(null, user);
     /*
     validate(username, password)
@@ -55,68 +59,43 @@ passport.use( new BasicStrategy(
   }
 ));
 
-const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
-SwaggerExpress.create(swaggerConfig, function(err, swaggerExpress) {
-  if (err) { throw err; }
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    next();
+  } else {
+    console.log('forbidden');
+    res.sendStatus(403);
+  }
+}
 
+console.log('local test:', handler.t('TRY_AGAIN'));
+
+const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
+SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
   // install middleware
-  swaggerExpress.register(app);
+  app.use(morgan('short'));
   app.use(SwaggerUi(swaggerExpress.runner.swagger));
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({extended: false}));
   // passport
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use('/', router);
-  //app.use(i18n.init);
-  app.route('/login')
-   .get(function(req, res, next) {
-     if (req.user) {
-       res.send('already login');
-     } else {
-    res.sendFile(__dirname + '/login.html');
-  }
+//  handler.registerLanguages(translation);
+  app.use('/auth', passport.authenticate('basic', {session: false}));
+  app.use('/auth/login', ensureAuthenticated, function(req, res) {
+    var somevalue = [{name: 'foo'},
+      {name: 'bar'},
+      {name: 'baz'}];
+      res.send(somevalue);
+  });
 
-router.get('/users',
-  passport.authenticate('basic',{ session: false}),
-  function( req, res ){
-      console.log('match');
-      res.end('Authorized ja');
-  }
-);
-//passport custom callback
-router.post('/login',
-  function(req, res, next) {
-    passport.authenticate('basic', function (err, user, info) {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        res.send({ status:"error" , message: 'Incorrect username/password'});
-        return res.end();
-      }
-      res.send(user);
-      res.end();
 
-    })(req, res, next);
-  }
-);
-
-})
+  swaggerExpress.register(app);
   var port = process.env.PORT || 10010;
   server.listen(port, ()=> {
     console.log('express server listening on port:', port);
   });
 });
-
-passport.serializeUser(function (user, done) {
-  done(null, user)
-});
-
-passport.deserializeUser(function (user, done) {
-  done(null, user);
-});
-
 
 function forwardToHttps(req, res, next) {
   if (req.get('X-Forwarded-Proto') === 'https') {

@@ -29,9 +29,40 @@ module.exports = {
   createImage: upload
 };
 
+const debug = require('debug')('api:fileupload');
+
+var util           = require('util');
+var multer       = require('multer');
+var fs             = require('fs');
+var path = require('path');
+var moment = require('moment');
+
+
+var i = 0; // 파일 개수
+var maxFileCount = 2; //
+var maxFileSize = 3 * 1000 * 1000;
+var filePath = './upload';
+
+
+var supported_mimes = [
+  'image/png',
+  'image/jpeg',
+  'image/gif'
+];
+
 function upload(req, res) {
-  res.json("success");
-}
+  debug(req.files);
+
+  var data = {
+    'id': 'test',
+    'extension': 'test',
+    'size': 1,
+    'type': 'test'
+  };
+
+  res.status(201).send(data);
+};
+
 /*
   Functions in a127 controllers used for operations should take two parameters:
 
