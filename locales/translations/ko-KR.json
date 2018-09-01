@@ -1,14 +1,7 @@
 {
-  "dev": {
-    "translation": {
-      "TRY_AGAIN": "test Sorry, please try again later",
-      "INFORMATION_NOT_FOUND": "Sorry, I cannot find information about %s",
-      "DO_NOT_UNDERSTAND": "Sorry, I cannot grasp what you mean"
-    }
-  },  
   "en-US": {
     "translation": {
-      "TRY_AGAIN": "eng Sorry, please try again later",
+      "TRY_AGAIN": "Sorry, please try again later",
       "INFORMATION_NOT_FOUND": "Sorry, I cannot find information about %s",
       "DO_NOT_UNDERSTAND": "Sorry, I cannot grasp what you mean"
     }

@@ -26,7 +26,8 @@ var util = require('util');
  */
 module.exports = {
   hello: hello,
-  createImage: upload
+  createImage: upload,
+  auth: auth,
 };
 
 const debug = require('debug')('api:fileupload');
@@ -73,7 +74,13 @@ function hello(req, res) {
   // variables defined in the Swagger document can be referenced using req.swagger.params.{parameter_name}
   var name = req.swagger.params.name.value || 'stranger';
   var hello = util.format('Hello, %s!', name);
-
+ 
+  console.log('handler====:', req.t('TRY_AGAIN'))
   // this sends back a JSON response which is a single string
   res.json(hello);
+}
+
+function auth(req, res) {
+  console.log('user:', user)
+  res.status(200).send({message: 'login success'})
 }

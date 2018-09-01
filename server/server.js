@@ -14,15 +14,30 @@ const appEnv = require('cfenv').getAppEnv();
 const app = express();
 const server = http.createServer();
 const router = require('./routes');
-const {handler} = require('../lib');
-const langResource = require('../locales/translations/en-US.json');
+const languageDetector = require('i18next-browser-languagedetector');
+const i18n = require('i18n');
+const sprintf = require('i18next-sprintf-postprocessor');
 const upload = require('multer')({dest: 'upload/'});
+
+i18n.configure({
+  locales:['en', 'ko'],
+  directory: '../locales',
+  register: global,
+  defaultLocale: 'ko',
+  cookie: 'lang',
+  api: {
+    '__': 't',  //now req.__ becomes req.t
+    '__n': 'tn' //and req.__n can be called as req.tn
+  },
+});
+
+
 app.set('trust rpoxy',1);
 server.on('request', app);
 
 const swaggerConfig = {
   appRoot: path.resolve(__dirname, '..'), // required config
-  securityHandlers: {
+  swaggerSecurityHandlers: {
     basicAuth: (req, auth, scope, next) =>
       passport.authenticate('basic', {session: false})(req, req.res, next),
   },
@@ -37,13 +52,23 @@ if (!appEnv.isLocal) {
   app.use(forwardToHttps);
 }
 
-handler.registerLanguages(langResource);
-passport.use( new BasicStrategy(
-  function(username, password, done) {
-    console.log('connected login');
+
+passport.use( new BasicStrategy({
+  passReqToCallback: true
+},
+  function(req, username, password, done) {
+    console.log('connected login:', req.body);
+    
     const user = { username: username, password: password};
-    console.log('user:', user);
-    return done(null, user);
+
+    if (user.username === 'admin' && user.password === '1234') {
+      console.log('user:', user);
+      console.log('user:', req.body.user_type);
+      return done(null, user);
+    } else {
+      return done (null, false)
+    }
+
     /*
     validate(username, password)
       .then(user => {
@@ -68,7 +93,6 @@ function ensureAuthenticated(req, res, next) {
   }
 }
 
-console.log('local test:', handler.t('TRY_AGAIN'));
 
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
@@ -80,14 +104,14 @@ SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
   // passport
   app.use(passport.initialize());
   app.use(passport.session());
-//  handler.registerLanguages(translation);
-  app.use('/auth', passport.authenticate('basic', {session: false}));
-  app.use('/auth/login', ensureAuthenticated, function(req, res) {
-    var somevalue = [{name: 'foo'},
-      {name: 'bar'},
-      {name: 'baz'}];
-      res.send(somevalue);
-  });
+  app.use(i18n.init);
+  // app.use('/auth', passport.authenticate('basic', {session: false}));
+  // app.use('/auth/login', ensureAuthenticated, function(req, res) {
+  //   var somevalue = [{name: 'foo'},
+  //     {name: 'bar'},
+  //     {name: 'baz'}];
+  //     res.send(somevalue);
+  // });
 
 
   swaggerExpress.register(app);
@@ -96,6 +120,7 @@ SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
     console.log('express server listening on port:', port);
   });
 });
+console.log("i18n : "+ t("TRY_AGAIN"));
 
 function forwardToHttps(req, res, next) {
   if (req.get('X-Forwarded-Proto') === 'https') {
