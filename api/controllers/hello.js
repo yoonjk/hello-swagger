@@ -81,6 +81,6 @@ function hello(req, res) {
 }
 
 function auth(req, res) {
-  console.log('user:', user)
-  res.status(200).send({message: 'login success'})
+  console.log('user:', req.user)
+  res.status(201).send({message: 'login success'})
 }

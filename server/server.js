@@ -58,10 +58,9 @@ passport.use( new BasicStrategy({
 },
   function(req, username, password, done) {
     console.log('connected login:', req.body);
-    
-    const user = { username: username, password: password};
-
-    if (user.username === 'admin' && user.password === '1234') {
+    const user = {username: username, password: password}
+   
+    if (username === 'admin' && password === '1234') {
       console.log('user:', user);
       console.log('user:', req.body.user_type);
       return done(null, user);
