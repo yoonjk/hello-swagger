@@ -164,20 +164,16 @@ const download = (req, res) => {
 	let mimetype;
   console.log('fileId:', req.files)
   console.log('fileId:', filename)
-	// 원래는 fileId(파일ID)에 해당하는 파일정보(원본파일명, 저장파일명, 파일저장경로, 파일사이즈)를 
-	// DB에서 읽어오도록 구현해야한다.
-	// --- 임시 테스트 코드 시작 -------------------------------------------------------------------
-  const sql = `
+	const sql = `
     select originalname, file_path from file_attach
     where originalname = :originalname
   `
-	// --- 임시 테스트 코드 끝 ---------------------------------------------------------------------------
 	const param = {
     originalname: filename
   }
 	var file = savedPath + '/' + savedFileNm; //예) '/temp/filename.zip'
 	/*test*/console.log('file : ', file);
-    //만약 var file 이 저장경로+원본파일명으로 이루져 있다면, 'filename = path.basename(file)' 문법으로 파일명만 읽어올 수도 있다.
+  //만약 var file 이 저장경로+원본파일명으로 이루져 있다면, 'filename = path.basename(file)' 문법으로 파일명만 읽어올 수도 있다.
   console.log('-----file:', file);
 	//mimetype = mime.lookup(file) 와 같이 '저장경로+파일명' 정보를 파라미터로 전달해도 된다. 이때 파일명은 확장자를 포함해야함
 	
@@ -210,8 +206,7 @@ const downloadFromDB = (req, res) => {
   const param = {
     originalname: filename
   }
-	// 원래는 fileId(파일ID)에 해당하는 파일정보(원본파일명, 저장파일명, 파일저장경로, 파일사이즈)를 
-	// DB에서 읽어오도록 구현해야한다.
+
   db.query(sql, param)
   .then(result => {
     console.log('row:',  result.rows.rows[0])
