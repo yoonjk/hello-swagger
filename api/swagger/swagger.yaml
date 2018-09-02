@@ -1,7 +1,7 @@
 swagger: "2.0"
 info:
   version: "0.0.1"
-  title: Hello World App
+  title: Hello Swagger App
 # during dev, should point to your local machine
 
 securityDefinitions:
@@ -22,10 +22,19 @@ schemes:
 consumes:
   - application/json
   - multipart/form-data
+  - application/octet-stream
+  - image/gif
+  - image/png
+  - image/jpg
+  - image/jpeg  
 # format of the responses to the client (Accepts)
 produces:
   - application/json
   - multipart/form-data 
+  - image/gif
+  - image/png
+  - image/jpg
+  - image/jpeg
 paths:
   /hello:
     # binds a127 app logic to a route
@@ -62,9 +71,14 @@ paths:
       operationId: createImage
       parameters:
         - in: formData
-          name: file
-          type: file
+          name: account_copy
           description: The file to upload.
+          type: file
+
+        - in: formData
+          name: biz_regist_no_copy
+          type: file
+          description: The file to upload.          
       responses:
         201: 
           description: SuccessFul request
@@ -74,6 +88,90 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+
+  /uploadToDB:
+    x-swagger-router-controller: hello
+    post:
+      summary: Uploads a file.
+      consumes:
+        - multipart/form-data
+      operationId: uploadToDB
+      parameters:
+        - in: formData
+          name: account
+          description: The file to upload.
+          type: file
+
+        - in: formData
+          name: biz_regist_no
+          type: file
+          description: The file to upload.          
+      responses:
+        201: 
+          description: SuccessFul request
+          schema:
+            $ref: "#/definitions/SuccessResponse"
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"            
+
+  /downloadFromFile:
+    x-swagger-router-controller: hello   
+    get:
+        summary: download a file.
+        consumes:
+          - "application/json"
+        produces:
+          - image/gif
+          - image/png
+          - image/jpg
+          - image/jpeg
+        operationId: download
+        parameters:
+          - in: query
+            name: filename
+            description: The file name.
+            type: string       
+        responses:
+          209: 
+            description: SuccessFul request
+            schema:
+              type: file
+
+          default:
+            description: Error
+            schema:
+              $ref: "#/definitions/ErrorResponse"      
+ 
+  /downloadFromDB:
+    x-swagger-router-controller: hello   
+    get:
+        summary: download a file.
+        consumes:
+          - "application/json"
+        produces:
+          - image/gif
+          - image/png
+          - image/jpg
+          - image/jpeg
+        operationId: downloadFromDB
+        parameters:
+          - in: query
+            name: filename
+            description: The file name.
+            type: string       
+        responses:
+          209: 
+            description: SuccessFul request
+            schema:
+              type: file
+
+          default:
+            description: Error
+            schema:
+              $ref: "#/definitions/ErrorResponse"                
+              
   /login:
     x-swagger-router-controller: hello
     post:   
@@ -85,10 +183,14 @@ paths:
       operationId: auth
       parameters:
         - name: user_type
-          in: formData
+          in: body
+          required: true   
           description: User's type.
-          type: string
-          required: true            
+          schema:
+            properties:
+              user_type:
+                 type: string
+         
       responses:
         201: 
           description: SuccessFul request

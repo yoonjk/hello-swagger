@@ -104,13 +104,6 @@ SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(i18n.init);
-  // app.use('/auth', passport.authenticate('basic', {session: false}));
-  // app.use('/auth/login', ensureAuthenticated, function(req, res) {
-  //   var somevalue = [{name: 'foo'},
-  //     {name: 'bar'},
-  //     {name: 'baz'}];
-  //     res.send(somevalue);
-  // });
 
 
   swaggerExpress.register(app);

@@ -24,11 +24,6 @@ var util = require('util');
   In the starter/skeleton project the 'get' operation on the '/hello' path has an operationId named 'hello'.  Here,
   we specify that in the exports of this module that 'hello' maps to the function named 'hello'
  */
-module.exports = {
-  hello: hello,
-  createImage: upload,
-  auth: auth,
-};
 
 const debug = require('debug')('api:fileupload');
 
@@ -37,14 +32,15 @@ var multer       = require('multer');
 var fs             = require('fs');
 var path = require('path');
 var moment = require('moment');
-
+var path = require('path');
+var mime = require('mime-types');
+const {db} = require('../../lib')
 
 var i = 0; // 파일 개수
 var maxFileCount = 2; //
 var maxFileSize = 3 * 1000 * 1000;
-var filePath = './upload';
-
-
+var FILE_UPLOAD_PATH = path.resolve(__dirname, '../../upload/')
+var FILE_RESOURCE_PATH = path.resolve(__dirname, '../../resources')
 var supported_mimes = [
   'image/png',
   'image/jpeg',
@@ -52,8 +48,57 @@ var supported_mimes = [
 ];
 
 function upload(req, res) {
-  debug(req.files);
+  const sql = `
+    insert into file_attach (file_id, fieldname, originalname, encoding, memetype, file_path, file_size)
+    values(:file_id, :fieldname, :originalname, :encoding, :memetype, :file_path, :file_size)
+  `
+  console.log('files:',req.files);
+  const files = req.files;
+  var data = {
+    'id': 'test',
+    'extension': 'test',
+    'size': 1,
+    'type': 'test'
+  };
+  let f1
+  let buffer;
+  for (let file in files) {
+    console.log('file=>', file)
+   
+    f1 = fs.createWriteStream(FILE_UPLOAD_PATH + '/' + files[file][0].originalname);
+    buffer = files[file][0].buffer;
+    console.log('buffer:', buffer)
+    f1.write(files[file][0].buffer);
+    f1.close();
 
+    let fileInfo = {}
+    fileInfo.file_id =  'ACC-' + moment().format('YYYYMMDDHHmmss')
+    fileInfo.originalname = files[file][0].originalname;
+    fileInfo.fieldname = files[file][0].fieldname;
+    fileInfo.encoding = files[file][0].encoding;
+    fileInfo.memetype = files[file][0].memetype;
+    fileInfo.file_path = FILE_UPLOAD_PATH;
+    fileInfo.file_size = files[file][0].size
+
+    console.log('fileInfo:', fileInfo)
+     db.update(sql, fileInfo)
+    .then(result => {
+      console.log('rows:', result.rows)
+      db.commit(result.connection)
+    })
+  }
+
+  res.status(201).send(data);
+  
+};
+
+function uploadToDB(req, res) {
+  const sql = `
+    insert into file_attach (file_id, fieldname, originalname, encoding, memetype, file_path, file_size, data)
+    values(:file_id, :fieldname, :originalname, :encoding, :memetype, :file_path, :file_size, :data)
+  `
+
+  const files = req.files;
   var data = {
     'id': 'test',
     'extension': 'test',
@@ -61,7 +106,42 @@ function upload(req, res) {
     'type': 'test'
   };
 
-  res.status(201).send(data);
+  console.log('files:', files)
+  let f1
+  let buffer;
+  let uploadFiles = [];
+  
+  for (let file in files) {
+    console.log('file=>', file)
+  
+    let fileInfo = {}
+
+    f1 = fs.createWriteStream(FILE_UPLOAD_PATH + '/' +  files[file][0].originalname);
+    buffer = files[file][0].buffer;
+    console.log('buffer:', buffer)
+    f1.write(files[file][0].buffer);
+    f1.close();
+
+    fileInfo.file_id =  'ACC-' + moment().format('YYYYMMDDHHmmss')
+    fileInfo.originalname = files[file][0].originalname;
+    fileInfo.fieldname = files[file][0].fieldname;
+    fileInfo.encoding = files[file][0].encoding;
+    fileInfo.memetype = files[file][0].memetype;
+    fileInfo.file_path = FILE_UPLOAD_PATH;
+    fileInfo.file_size = files[file][0].size
+    fileInfo.data = files[file][0].buffer;
+
+    console.log('fileInfo:', fileInfo)
+     db.update(sql, fileInfo)
+    .then(result => {
+      console.log('rows:', result.rows)
+      db.commit(result.connection)
+    })
+  }
+
+  res.status(201).send(data)
+  
+  
 };
 
 /*
@@ -84,3 +164,112 @@ function auth(req, res) {
   console.log('user:', req.user)
   res.status(201).send({message: 'login success'})
 }
+
+function download(req, res) {
+	var filename = req.swagger.params.filename.value; //fileid = 각각의 파일을 구분하는 파일ID 값
+	var origFileNm, savedFileNm, savedPath, fileSize; //DB에서 읽어올 정보들
+	let mimetype;
+  console.log('fileId:', req.files)
+  console.log('fileId:', filename)
+	// 원래는 fileId(파일ID)에 해당하는 파일정보(원본파일명, 저장파일명, 파일저장경로, 파일사이즈)를 
+	// DB에서 읽어오도록 구현해야한다.
+	// --- 임시 테스트 코드 시작 -------------------------------------------------------------------
+  const sql = `
+    select originalname, file_path from file_attach
+    where originalname = :originalname
+  `
+	// --- 임시 테스트 코드 끝 ---------------------------------------------------------------------------
+	const param = {
+    originalname: filename
+  }
+	var file = savedPath + '/' + savedFileNm; //예) '/temp/filename.zip'
+	/*test*/console.log('file : ', file);
+    //만약 var file 이 저장경로+원본파일명으로 이루져 있다면, 'filename = path.basename(file)' 문법으로 파일명만 읽어올 수도 있다.
+  console.log('-----file:', file);
+	//mimetype = mime.lookup(file) 와 같이 '저장경로+파일명' 정보를 파라미터로 전달해도 된다. 이때 파일명은 확장자를 포함해야함
+	
+  db.query(sql, param)
+  .then(result => {
+    console.log('row:',  result.rows.rows[0])
+    origFileNm = result.rows.rows[0].ORIGINALNAME;
+    const file = result.rows.rows[0].FILE_PATH + '/' + result.rows.rows[0].ORIGINALNAME;
+
+    mimetype = mime.lookup( origFileNm ); // => 'application/zip', 'text/plain', 'image/png' 등을 반환
+    /*test*/console.log('mimetype : ' + mimetype);
+    
+    res.setHeader('Content-disposition', 'attachment; filename=' + origFileNm ); // origFileNm으로 로컬PC에 파일 저장
+    res.setHeader('Content-type', mimetype);
+
+    const filestream = fs.createReadStream(file);
+    filestream.pipe(res);
+  });
+}
+
+function downloadFromDB(req, res) {
+	var filename = req.swagger.params.filename.value; //fileid = 각각의 파일을 구분하는 파일ID 값
+	var origFileNm, savedFileNm, savedPath, fileSize; //DB에서 읽어올 정보들
+	let mimetype;
+  console.log('filename:', filename)
+  const sql = `
+    select originalname, file_path, data from file_attach
+    where originalname = :originalname
+  `
+  const param = {
+    originalname: filename
+  }
+	// 원래는 fileId(파일ID)에 해당하는 파일정보(원본파일명, 저장파일명, 파일저장경로, 파일사이즈)를 
+	// DB에서 읽어오도록 구현해야한다.
+  db.query(sql, param)
+  .then(result => {
+    console.log('row:',  result.rows.rows[0])
+    origFileNm = result.rows.rows[0].ORIGINALNAME;
+    const file = result.rows.rows[0].FILE_PATH + '/' + result.rows.rows[0].ORIGINALNAME;
+    console.log('file=:', file)
+	  //mimetype = mime.lookup(file) 와 같이 '저장경로+파일명' 정보를 파라미터로 전달해도 된다. 이때 파일명은 확장자를 포함해야함
+	  mimetype = mime.lookup( origFileNm ); // => 'application/zip', 'text/plain', 'image/png' 등을 반환
+    /*test*/console.log('mimetype : ' + mimetype);
+    
+    res.setHeader('Content-disposition', 'attachment; filename=' + origFileNm ); // origFileNm으로 로컬PC에 파일 저장
+    res.setHeader('Content-type', mimetype);
+
+    const lob = result.rows.rows[0].DATA;
+    if (lob === null) {
+      console.log("BLOB was NULL");
+      return;
+    }
+    lob.on(
+      'end',
+      function() {
+        console.log("lob.on 'end' event");
+        res.end();
+      });
+    lob.on(
+      'close',
+      function() {
+        console.log("lob.on 'close' event");
+        db.close(result.connection)
+      });
+    lob.on(
+      'error',
+      function(err) {
+        console.log("lob.on 'error' event");
+        console.error(err);
+        db.close(result.connection)
+      });
+
+    lob.pipe(res);
+
+    //filestream.pipe(res);
+
+  })
+
+}
+
+module.exports = {
+  hello: hello,
+  createImage: upload,
+  auth: auth,
+  download: download,
+  downloadFromDB: downloadFromDB,
+  uploadToDB: uploadToDB,
+};
