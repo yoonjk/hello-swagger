@@ -10,7 +10,7 @@
 
   It is a good idea to list the modules that your application depends on in the package.json in the project root
  */
-var util = require('util');
+
 
 /*
  Once you 'require' a module you can reference the things that it exports.  These are defined in module.exports.
@@ -25,29 +25,22 @@ var util = require('util');
   we specify that in the exports of this module that 'hello' maps to the function named 'hello'
  */
 
-const debug = require('debug')('api:fileupload');
 
-var util           = require('util');
-var multer       = require('multer');
-var fs             = require('fs');
-var path = require('path');
-var moment = require('moment');
-var path = require('path');
-var mime = require('mime-types');
+const util = require('util');
+const fs   = require('fs');
+const path = require('path');
+const moment = require('moment');
+const mime = require('mime-types');
 const {db} = require('../../lib')
-
-var i = 0; // 파일 개수
-var maxFileCount = 2; //
-var maxFileSize = 3 * 1000 * 1000;
-var FILE_UPLOAD_PATH = path.resolve(__dirname, '../../upload/')
-var FILE_RESOURCE_PATH = path.resolve(__dirname, '../../resources')
-var supported_mimes = [
+const FILE_UPLOAD_PATH = path.resolve(__dirname, '../../upload/')
+const FILE_RESOURCE_PATH = path.resolve(__dirname, '../../resources')
+const supported_mimes = [
   'image/png',
   'image/jpeg',
   'image/gif'
 ];
 
-function upload(req, res) {
+const upload = (req, res)=> {
   const sql = `
     insert into file_attach (file_id, fieldname, originalname, encoding, memetype, file_path, file_size)
     values(:file_id, :fieldname, :originalname, :encoding, :memetype, :file_path, :file_size)
@@ -92,7 +85,7 @@ function upload(req, res) {
   
 };
 
-function uploadToDB(req, res) {
+const uploadToDB = (req, res) => {
   const sql = `
     insert into file_attach (file_id, fieldname, originalname, encoding, memetype, file_path, file_size, data)
     values(:file_id, :fieldname, :originalname, :encoding, :memetype, :file_path, :file_size, :data)
@@ -150,7 +143,7 @@ function uploadToDB(req, res) {
   Param 1: a handle to the request object
   Param 2: a handle to the response object
  */
-function hello(req, res) {
+const hello=(req, res)=>{
   // variables defined in the Swagger document can be referenced using req.swagger.params.{parameter_name}
   var name = req.swagger.params.name.value || 'stranger';
   var hello = util.format('Hello, %s!', name);
@@ -160,12 +153,12 @@ function hello(req, res) {
   res.json(hello);
 }
 
-function auth(req, res) {
+const auth = (req, res)=>{
   console.log('user:', req.user)
   res.status(201).send({message: 'login success'})
 }
 
-function download(req, res) {
+const download = (req, res) => {
 	var filename = req.swagger.params.filename.value; //fileid = 각각의 파일을 구분하는 파일ID 값
 	var origFileNm, savedFileNm, savedPath, fileSize; //DB에서 읽어올 정보들
 	let mimetype;
@@ -205,7 +198,7 @@ function download(req, res) {
   });
 }
 
-function downloadFromDB(req, res) {
+const downloadFromDB = (req, res) => {
 	var filename = req.swagger.params.filename.value; //fileid = 각각의 파일을 구분하는 파일ID 값
 	var origFileNm, savedFileNm, savedPath, fileSize; //DB에서 읽어올 정보들
 	let mimetype;
