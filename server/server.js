@@ -19,6 +19,12 @@ const i18n = require('i18n');
 const sprintf = require('i18next-sprintf-postprocessor');
 const upload = require('multer')({dest: 'upload/'});
 
+const JwtStrategy = require('passport-jwt').Strategy;
+const ExtractJwt = require('passport-jwt').ExtractJwt;
+const jwt = require('jsonwebtoken');
+const SECRET = 'SECRET';
+const auth = require('./auth/auth')
+
 i18n.configure({
   locales:['en', 'ko'],
   directory: '../locales',
@@ -40,8 +46,20 @@ const swaggerConfig = {
   swaggerSecurityHandlers: {
     basicAuth: (req, auth, scope, next) =>
       passport.authenticate('basic', {session: false})(req, req.res, next),
-  },
-};
+    Bearer: (req, authOrSecDef, scopesOrApiKey, cb) => {
+      console.log('bearer:',authOrSecDef, scopesOrApiKey, req.body )
+      console.log('api-key:',scopesOrApiKey )
+      // if (scopesOrApiKey === '1234') {
+        
+      //   cb();
+      // } else {
+      //   cb(new Error('access denied!'));
+      // }
+
+      passport.authenticate('jwt', {session: false})(req, req.res, cb)
+     },
+  }
+}
 
 
 // session
@@ -52,6 +70,21 @@ if (!appEnv.isLocal) {
   app.use(forwardToHttps);
 }
 
+
+/*
+ * Setup for JWT authentication
+ */
+passport.use(new JwtStrategy({
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: SECRET
+}, (payload, next) => {
+  console.log('jwt payload:', payload)
+  if (payload.id !== user.id) {
+    next(null, false);
+  } else {
+    next(null, user);
+  }
+}));
 
 passport.use( new BasicStrategy({
   passReqToCallback: true
@@ -67,30 +100,9 @@ passport.use( new BasicStrategy({
     } else {
       return done (null, false)
     }
-
-    /*
-    validate(username, password)
-      .then(user => {
-        console.log('success login');
-	return done(null, user)})
-      .catch(err => {
-        if (err.statusCode === 401 || err.statusCode === 404) {
-          done(null, false);
-        }
-        done(err);
-      });
-    */
   }
 ));
 
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    next();
-  } else {
-    console.log('forbidden');
-    res.sendStatus(403);
-  }
-}
 
 
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');

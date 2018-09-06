@@ -32,8 +32,11 @@ const path = require('path');
 const moment = require('moment');
 const mime = require('mime-types');
 const {db} = require('../../lib')
+const {issueToken} = require('../../server/auth/auth')
 const FILE_UPLOAD_PATH = path.resolve(__dirname, '../../upload/')
 const FILE_RESOURCE_PATH = path.resolve(__dirname, '../../resources')
+const SECRET = 'shh'
+const jwt = require('jsonwebtoken');
 const supported_mimes = [
   'image/png',
   'image/jpeg',
@@ -153,8 +156,45 @@ const hello=(req, res)=>{
   res.json(hello);
 }
 
+/*
+  Functions in a127 controllers used for operations should take two parameters:
+
+  Param 1: a handle to the request object
+  Param 2: a handle to the response object
+ */
+const test=(req, res)=>{
+  // variables defined in the Swagger document can be referenced using req.swagger.params.{parameter_name}
+  var name = req.swagger.params.name.value || 'stranger';
+  var hello = util.format('Hello, %s!', name);
+ 
+  console.log('handler====:', req.t('TRY_AGAIN'))
+  // this sends back a JSON response which is a single string
+  res.json(hello);
+}
+
+const token = (req, res)=>{
+  const body = req.body;
+  const user = req.user;
+  console.log('token  user:', req.user)
+  console.log('body:', body)
+  var tokenString = issueToken(user.username);
+
+  const token = jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '1d' });
+  console.log('token:',token)
+  return res.json({ accessToken: token });
+
+  res.status(201).send({message: 'login success'})
+}
+
 const auth = (req, res)=>{
+  const body = req.body;
+  const user = req.user;
   console.log('user:', req.user)
+  console.log('body:', body)
+
+  const token = jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '1d' });
+  return res.json({ accessToken: token });
+  
   res.status(201).send({message: 'login success'})
 }
 
@@ -260,4 +300,5 @@ module.exports = {
   download: download,
   downloadFromDB: downloadFromDB,
   uploadToDB: uploadToDB,
+  token: token,
 };

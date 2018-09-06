@@ -5,9 +5,14 @@ info:
 # during dev, should point to your local machine
 
 securityDefinitions:
-  basicAuth:
+  Bearer:
     description: OpenStack Keystone Authentication
+    type: apiKey
+    name: Authorization
+    in: header
+  basicAuth:
     type: basic
+
 
 security:
   - basicAuth: []
@@ -22,15 +27,17 @@ schemes:
 consumes:
   - application/json
   - multipart/form-data
-  - application/octet-stream
+  - application/x-www-form-urlencoded
   - image/gif
   - image/png
   - image/jpg
   - image/jpeg  
+
 # format of the responses to the client (Accepts)
 produces:
   - application/json
   - multipart/form-data 
+  - application/x-www-form-urlencoded
   - image/gif
   - image/png
   - image/jpg
@@ -41,6 +48,11 @@ paths:
 
     x-swagger-router-controller: hello
     get:
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - admin
+        - user    
       description: Returns 'Hello' to the caller
       # used as the method name of the controller
       operationId: hello
@@ -62,6 +74,34 @@ paths:
           description: Error
           schema:
             $ref: "#/definitions/ErrorResponse"
+
+  /test:
+    # binds a127 app logic to a route
+
+    x-swagger-router-controller: hello
+    get: 
+      description: Returns 'Hello' to the caller
+      # used as the method name of the controller
+      operationId: hello
+      parameters:
+        - name: name
+          in: query
+          description: The name of the person to whom to say hello
+          required: false
+          type: string
+          default: jaeguk
+      responses:
+        "200":
+          description: Success
+          schema:
+            # a pointer to a definition
+            $ref: "#/definitions/HelloWorldResponse"
+        # responses may fall through to errors
+        default:
+          description: Error
+          schema:
+            $ref: "#/definitions/ErrorResponse"            
+
   /upload:
     x-swagger-router-controller: hello
     post:
@@ -171,11 +211,50 @@ paths:
             description: Error
             schema:
               $ref: "#/definitions/ErrorResponse"                
-              
+   
+  /token:
+    x-swagger-router-controller: hello
+    post:   
+      summary: token
+      x-security-scopes:
+        - admin
+        - user    
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      operationId: token
+      parameters:
+        - name: user_type
+          in: body
+          required: true   
+          description: User's type.
+          schema:
+            properties:
+              user_type:
+                type: string
+              username:
+                type: string
+              password:
+                type: string
+
+      responses:
+        201: 
+          description: SuccessFul request
+          schema:
+            properties:
+              token:
+                type: string      
+
   /login:
     x-swagger-router-controller: hello
     post:   
       summary: login
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - admin
+        - user    
       consumes:
         - application/json
       produces:
@@ -189,7 +268,11 @@ paths:
           schema:
             properties:
               user_type:
-                 type: string
+                type: string
+              username:
+                type: string
+              password:
+                type: string
          
       responses:
         201: 
