@@ -6,10 +6,12 @@ const session = require('express-session');
 const http = require('http');
 const path = require('path');
 const morgan = require('morgan');
+const nocache = require('nocache')
+const nosniff = require('dont-sniff-mimetype')
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const { BasicStrategy } = require('passport-http');
-const { validate } = require('./auth');
+const { validate, verifyToken } = require('./auth');
 const appEnv = require('cfenv').getAppEnv();
 const app = express();
 const server = http.createServer();
@@ -38,7 +40,7 @@ i18n.configure({
 });
 
 
-app.set('trust rpoxy',1);
+app.set('trust proxy',1);
 server.on('request', app);
 
 const swaggerConfig = {
@@ -47,17 +49,18 @@ const swaggerConfig = {
     basicAuth: (req, auth, scope, next) =>
       passport.authenticate('basic', {session: false})(req, req.res, next),
     Bearer: (req, authOrSecDef, scopesOrApiKey, cb) => {
+      console.log('Bearer:',authOrSecDef, scopesOrApiKey, req.body )
+      verifyToken(req, authOrSecDef, scopesOrApiKey, cb)
+    },
+    apiKey: (req, authOrSecDef, scopesOrApiKey, cb) => {
       console.log('bearer:',authOrSecDef, scopesOrApiKey, req.body )
       console.log('api-key:',scopesOrApiKey )
-      // if (scopesOrApiKey === '1234') {
-        
-      //   cb();
-      // } else {
-      //   cb(new Error('access denied!'));
-      // }
-
-      passport.authenticate('jwt', {session: false})(req, req.res, cb)
-     },
+      if (scopesOrApiKey === '1234') {
+        cb();
+      } else {
+        cb(new Error('access denied!'));
+      }
+    },
   }
 }
 
@@ -70,21 +73,6 @@ if (!appEnv.isLocal) {
   app.use(forwardToHttps);
 }
 
-
-/*
- * Setup for JWT authentication
- */
-passport.use(new JwtStrategy({
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-  secretOrKey: SECRET
-}, (payload, next) => {
-  console.log('jwt payload:', payload)
-  if (payload.id !== user.id) {
-    next(null, false);
-  } else {
-    next(null, user);
-  }
-}));
 
 passport.use( new BasicStrategy({
   passReqToCallback: true
@@ -108,7 +96,9 @@ passport.use( new BasicStrategy({
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
   // install middleware
+  app.use(nocache())
   app.use(morgan('short'));
+  app.use(nosniff())
   app.use(SwaggerUi(swaggerExpress.runner.swagger));
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({extended: false}));

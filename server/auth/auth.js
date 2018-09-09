@@ -18,14 +18,17 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
   console.log('========currentScope:', token)
   //validate the 'Authorization' header. it should have the following format:
   //'Bearer tokenString'
+  console.log('verify token:', token)
   if (token && token.indexOf("Bearer ") == 0) {
     var tokenString = token.split(" ")[1];
 
+    console.log('jwt.verify token:', tokenString)
     jwt.verify(tokenString, sharedSecret, function(
       verificationError,
       decodedToken
     ) {
       //check if the JWT was verified correctly
+      console.log('decodedToken:', decodedToken)
       if (
         verificationError == null &&
         Array.isArray(currentScopes) &&

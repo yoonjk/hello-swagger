@@ -150,7 +150,7 @@ const hello=(req, res)=>{
   // variables defined in the Swagger document can be referenced using req.swagger.params.{parameter_name}
   var name = req.swagger.params.name.value || 'stranger';
   var hello = util.format('Hello, %s!', name);
- 
+  console.log('token:', req.token)
   console.log('handler====:', req.t('TRY_AGAIN'))
   // this sends back a JSON response which is a single string
   res.json(hello);
@@ -175,11 +175,13 @@ const test=(req, res)=>{
 const token = (req, res)=>{
   const body = req.body;
   const user = req.user;
+  const role = 'user'
   console.log('token  user:', req.user)
   console.log('body:', body)
-  var tokenString = issueToken(user.username);
-
-  const token = jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '1d' });
+  //var tokenString = issueToken(user.username);
+  var token = auth.issueToken(user.username, role);
+  //const token = jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '1d' });
+  issueToken(u)
   console.log('token:',token)
   return res.json({ accessToken: token });
 
@@ -191,8 +193,9 @@ const auth = (req, res)=>{
   const user = req.user;
   console.log('user:', req.user)
   console.log('body:', body)
-
-  const token = jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '1d' });
+  const role = 'admin'
+  //const token = jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '1d' });
+  var token = issueToken(user.username, role);
   return res.json({ accessToken: token });
   
   res.status(201).send({message: 'login success'})
