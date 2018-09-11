@@ -11,10 +11,14 @@ securityDefinitions:
     name: Authorization
     in: header
   apiKey:
-    description: OpenStack Keystone Authentication
+    description: Authentication using api-key
+       token
     type: apiKey
-    name: Authorization
-    in: header    
+ #   name: Authorization
+ #   in: header
+    name: api-key
+    in: query
+        
   basicAuth:
     type: basic
 
@@ -57,7 +61,9 @@ paths:
         - Bearer: []
       x-security-scopes:
         - admin
-      description: Returns 'Hello' to the caller
+      description: |
+         Returns 'Hello' to the caller \n
+         Bearer authentication
       # used as the method name of the controller
       operationId: hello
       parameters:
