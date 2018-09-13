@@ -62,7 +62,7 @@ paths:
       x-security-scopes:
         - admin
       description: |
-         Returns 'Hello' to the caller \n
+         Returns 'Hello' to the caller |
          Bearer authentication
       # used as the method name of the controller
       operationId: hello
