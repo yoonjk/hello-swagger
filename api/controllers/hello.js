@@ -222,9 +222,9 @@ const download = (req, res) => {
 	
   db.query(sql, param)
   .then(result => {
-    console.log('row:',  result.rows.rows[0])
-    origFileNm = result.rows.rows[0].ORIGINALNAME;
-    const file = result.rows.rows[0].FILE_PATH + '/' + result.rows.rows[0].ORIGINALNAME;
+    console.log('row:',  result.rows[0])
+    origFileNm = result.rows[0].ORIGINALNAME;
+    const file = result.rows[0].FILE_PATH + '/' + result.rows[0].ORIGINALNAME;
 
     mimetype = mime.lookup( origFileNm ); // => 'application/zip', 'text/plain', 'image/png' 등을 반환
     /*test*/console.log('mimetype : ' + mimetype);
@@ -250,11 +250,11 @@ const downloadFromDB = (req, res) => {
     originalname: filename
   }
 
-  db.query(sql, param)
+  db.query(sql, param, undefined, false)
   .then(result => {
-    console.log('row:',  result.rows.rows[0])
-    origFileNm = result.rows.rows[0].ORIGINALNAME;
-    const file = result.rows.rows[0].FILE_PATH + '/' + result.rows.rows[0].ORIGINALNAME;
+    console.log('row:',  result.rows[0])
+    origFileNm = result.rows[0].ORIGINALNAME;
+    const file = result.rows[0].FILE_PATH + '/' + result.rows[0].ORIGINALNAME;
     console.log('file=:', file)
 	  //mimetype = mime.lookup(file) 와 같이 '저장경로+파일명' 정보를 파라미터로 전달해도 된다. 이때 파일명은 확장자를 포함해야함
 	  mimetype = mime.lookup( origFileNm ); // => 'application/zip', 'text/plain', 'image/png' 등을 반환
@@ -263,7 +263,7 @@ const downloadFromDB = (req, res) => {
     res.setHeader('Content-disposition', 'attachment; filename=' + origFileNm ); // origFileNm으로 로컬PC에 파일 저장
     res.setHeader('Content-type', mimetype);
 
-    const lob = result.rows.rows[0].DATA;
+    const lob = result.rows[0].DATA;
     if (lob === null) {
       console.log("BLOB was NULL");
       return;
@@ -278,14 +278,14 @@ const downloadFromDB = (req, res) => {
       'close',
       function() {
         console.log("lob.on 'close' event");
-        db.close(result.connection)
+        db.release(result.connection)
       });
     lob.on(
       'error',
       function(err) {
         console.log("lob.on 'error' event");
         console.error(err);
-        db.close(result.connection)
+        db.release(result.connection)
       });
 
     lob.pipe(res);
@@ -293,7 +293,6 @@ const downloadFromDB = (req, res) => {
     //filestream.pipe(res);
 
   })
-
 }
 
 module.exports = {
