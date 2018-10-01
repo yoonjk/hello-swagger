@@ -99,13 +99,24 @@ SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
   app.use(nocache())
   app.use(morgan('short'));
   app.use(nosniff())
+ 
+  app.use(express.static(__dirname + '/../public'));
+  app.set('views', path.join(__dirname, '/../public/views'));
+  // Set EJS View Engine**
+  app.set('view engine','ejs');
+ // Set HTML engine**
+  app.engine('html', require('ejs').renderFile);
   app.use(SwaggerUi(swaggerExpress.runner.swagger));
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({extended: false}));
   // passport
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use(i18n.init);
+  app.get('/main', (req, res) => {
+    console.log('pages/main')
+    //res.sendFile('/views/main.html');
+    res.render('main.html')
+  })
 
 
   swaggerExpress.register(app);
