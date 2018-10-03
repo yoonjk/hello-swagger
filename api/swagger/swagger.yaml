@@ -258,7 +258,7 @@ paths:
               token:
                 type: string      
 
-  /login:
+  /auth:
     x-swagger-router-controller: hello
     post:   
       summary: login
@@ -291,6 +291,8 @@ paths:
           description: SuccessFul request
           schema:
             $ref: "#/definitions/SuccessResponse"
+
+     
 
   /swagger:
     x-swagger-pipe: swagger_raw

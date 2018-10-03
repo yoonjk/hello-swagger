@@ -16,9 +16,6 @@ const appEnv = require('cfenv').getAppEnv();
 const app = express();
 const server = http.createServer();
 const router = require('./routes');
-const languageDetector = require('i18next-browser-languagedetector');
-const i18n = require('i18n');
-const sprintf = require('i18next-sprintf-postprocessor');
 const upload = require('multer')({dest: 'upload/'});
 
 const JwtStrategy = require('passport-jwt').Strategy;
@@ -26,19 +23,6 @@ const ExtractJwt = require('passport-jwt').ExtractJwt;
 const jwt = require('jsonwebtoken');
 const SECRET = 'SECRET';
 const auth = require('./auth/auth')
-
-i18n.configure({
-  locales:['en', 'ko'],
-  directory: '../locales',
-  register: global,
-  defaultLocale: 'ko',
-  cookie: 'lang',
-  api: {
-    '__': 't',  //now req.__ becomes req.t
-    '__n': 'tn' //and req.__n can be called as req.tn
-  },
-});
-
 
 app.set('trust proxy',1);
 server.on('request', app);
@@ -66,7 +50,9 @@ const swaggerConfig = {
 
 
 // session
-app.use(session({resave: true, saveUninitialized: true, secret: 'Hello-Swagger', cookie: { secure: true, sameSite: true }}));
+app.use(session({resave: false, saveUninitialized: true, secret: 'Hello-Swagger', 
+   cookie: { secure: false, sameSite: true }
+  }));
 
 
 if (!appEnv.isLocal) {
@@ -75,7 +61,8 @@ if (!appEnv.isLocal) {
 
 
 passport.use( new BasicStrategy({
-  passReqToCallback: true
+  passReqToCallback: true,
+  session: true // 세션에 저장 여부
 },
   function(req, username, password, done) {
     console.log('connected login:', req.body);
@@ -83,15 +70,25 @@ passport.use( new BasicStrategy({
    
     if (username === 'admin' && password === '1234') {
       console.log('user:', user);
-      console.log('user:', req.body.user_type);
+
+      req.session.user = username;
+      console.log('user session:', req.session.user);
       return done(null, user);
     } else {
-      return done (null, false)
+      return done (null)
     }
   }
 ));
 
-
+passport.serializeUser((user, done) => { // Strategy 성공 시 호출됨
+  console.log('serializeUser:', user)
+  done(null, user); // 여기의 user._id가 req.session.passport.user에 저장
+});
+passport.deserializeUser((id, done) => { // 매개변수 id는 req.session.passport.user에 저장된 값
+    console.log('deserializeUser:', user)
+    done(null, user); // 여기의 user가 req.user가 됨
+ 
+});
 
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
@@ -101,7 +98,7 @@ SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
   app.use(nosniff())
  
   app.use(express.static(__dirname + '/../public'));
-  app.set('views', path.join(__dirname, '/../public/views'));
+  app.set('views', path.join(__dirname, '/../views'));
   // Set EJS View Engine**
   app.set('view engine','ejs');
  // Set HTML engine**
@@ -112,12 +109,14 @@ SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
   // passport
   app.use(passport.initialize());
   app.use(passport.session());
-  app.get('/main', (req, res) => {
-    console.log('pages/main')
-    //res.sendFile('/views/main.html');
-    res.render('main.html')
-  })
+  // app.get('/main', (req, res) => {
+  //   console.log('pages/main')
+  //   console.log(req.auth)
+  //   //res.sendFile('/views/main.html');
+  //   res.render('main.html')
+  // })
 
+  app.use('/', router);
 
   swaggerExpress.register(app);
   var port = process.env.PORT || 10010;
@@ -125,7 +124,6 @@ SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
     console.log('express server listening on port:', port);
   });
 });
-console.log("i18n : "+ t("TRY_AGAIN"));
 
 function forwardToHttps(req, res, next) {
   if (req.get('X-Forwarded-Proto') === 'https') {
