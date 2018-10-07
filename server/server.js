@@ -16,16 +16,27 @@ const appEnv = require('cfenv').getAppEnv();
 const app = express();
 const server = http.createServer();
 const router = require('./routes');
-const upload = require('multer')({dest: 'upload/'});
 
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
 const jwt = require('jsonwebtoken');
+const redisClient = require('redis').createClient();
 const SECRET = 'SECRET';
 const auth = require('./auth/auth')
 
 app.set('trust proxy',1);
 server.on('request', app);
+
+const limiter = require('express-limiter')(app, redisClient);
+
+// Limit requests to 100 per hour per ip address.
+limiter({
+  path: '*',
+  method: 'all',
+  lookup: ['connection.remoteAddress'],
+  total: 5,
+  expire: 1000 * 60
+})
 
 const swaggerConfig = {
   appRoot: path.resolve(__dirname, '..'), // required config
@@ -62,7 +73,7 @@ if (!appEnv.isLocal) {
 
 passport.use( new BasicStrategy({
   passReqToCallback: true,
-  session: true // 세션에 저장 여부
+
 },
   function(req, username, password, done) {
     console.log('connected login:', req.body);
@@ -79,16 +90,6 @@ passport.use( new BasicStrategy({
     }
   }
 ));
-
-passport.serializeUser((user, done) => { // Strategy 성공 시 호출됨
-  console.log('serializeUser:', user)
-  done(null, user); // 여기의 user._id가 req.session.passport.user에 저장
-});
-passport.deserializeUser((id, done) => { // 매개변수 id는 req.session.passport.user에 저장된 값
-    console.log('deserializeUser:', user)
-    done(null, user); // 여기의 user가 req.user가 됨
- 
-});
 
 const SwaggerUi = require('swagger-tools/middleware/swagger-ui');
 SwaggerExpress.createAsync(swaggerConfig).then(swaggerExpress=> {
